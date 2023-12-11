@@ -154,6 +154,10 @@ void BodySystemCUDA<T>::_initialize(int numBodies) {
       m_deviceData[i].dPos[0] = m_hPos[0];
       m_deviceData[i].dPos[1] = m_hPos[1];
       m_deviceData[i].dVel = m_hVel;
+
+      cudaMemPrefetchAsync(m_hPos[0], memSize, i);
+      cudaMemPrefetchAsync(m_hPos[1], memSize, i);
+      cudaMemPrefetchAsync(m_hVel, memSize, i);
     }
   } else {
     m_hPos[0] = new T[m_numBodies * 4];
@@ -215,6 +219,10 @@ void BodySystemCUDA<T>::_initialize(int numBodies) {
         m_deviceData[i].dPos[0] = m_deviceData[0].dPos[0];
         m_deviceData[i].dPos[1] = m_deviceData[0].dPos[1];
         m_deviceData[i].dVel = m_deviceData[0].dVel;
+
+        cudaMemPrefetchAsync(m_deviceData[0].dPos[0], memSize, i);
+        cudaMemPrefetchAsync(m_deviceData[0].dPos[1], memSize, i);
+        cudaMemPrefetchAsync(m_deviceData[0].dVel, memSize, i);
       }
     }
   }
