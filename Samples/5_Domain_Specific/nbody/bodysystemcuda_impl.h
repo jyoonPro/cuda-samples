@@ -137,12 +137,9 @@ void BodySystemCUDA<T>::_initialize(int numBodies) {
   delete[] numSms;
 
   if (m_bUseSysMem) {
-    checkCudaErrors(cudaHostAlloc((void **)&m_hPos[0], memSize,
-                                  cudaHostAllocMapped | cudaHostAllocPortable));
-    checkCudaErrors(cudaHostAlloc((void **)&m_hPos[1], memSize,
-                                  cudaHostAllocMapped | cudaHostAllocPortable));
-    checkCudaErrors(cudaHostAlloc((void **)&m_hVel, memSize,
-                                  cudaHostAllocMapped | cudaHostAllocPortable));
+    checkCudaErrors(cudaMallocManaged((void **)&m_hPos[0], memSize));
+    checkCudaErrors(cudaMallocManaged((void **)&m_hPos[1], memSize));
+    checkCudaErrors(cudaMallocManaged((void **)&m_hVel, memSize));
 
     memset(m_hPos[0], 0, memSize);
     memset(m_hPos[1], 0, memSize);
@@ -154,12 +151,9 @@ void BodySystemCUDA<T>::_initialize(int numBodies) {
       }
 
       checkCudaErrors(cudaEventCreate(&m_deviceData[i].event));
-      checkCudaErrors(cudaHostGetDevicePointer(
-          (void **)&m_deviceData[i].dPos[0], (void *)m_hPos[0], 0));
-      checkCudaErrors(cudaHostGetDevicePointer(
-          (void **)&m_deviceData[i].dPos[1], (void *)m_hPos[1], 0));
-      checkCudaErrors(cudaHostGetDevicePointer((void **)&m_deviceData[i].dVel,
-                                               (void *)m_hVel, 0));
+      m_deviceData[i].dPos[0] = m_hPos[0];
+      m_deviceData[i].dPos[1] = m_hPos[1];
+      m_deviceData[i].dVel = m_hVel;
     }
   } else {
     m_hPos[0] = new T[m_numBodies * 4];
@@ -192,11 +186,11 @@ void BodySystemCUDA<T>::_initialize(int numBodies) {
                                                      cudaGraphicsMapFlagsNone));
       }
     } else {
-      checkCudaErrors(cudaMalloc((void **)&m_deviceData[0].dPos[0], memSize));
-      checkCudaErrors(cudaMalloc((void **)&m_deviceData[0].dPos[1], memSize));
+      checkCudaErrors(cudaMallocManaged((void **)&m_deviceData[0].dPos[0], memSize));
+      checkCudaErrors(cudaMallocManaged((void **)&m_deviceData[0].dPos[1], memSize));
     }
 
-    checkCudaErrors(cudaMalloc((void **)&m_deviceData[0].dVel, memSize));
+    checkCudaErrors(cudaMallocManaged((void **)&m_deviceData[0].dVel, memSize));
 
     // At this point we already know P2P is supported
     if (m_bUseP2P) {
@@ -233,9 +227,9 @@ void BodySystemCUDA<T>::_finalize() {
   assert(m_bInitialized);
 
   if (m_bUseSysMem) {
-    checkCudaErrors(cudaFreeHost(m_hPos[0]));
-    checkCudaErrors(cudaFreeHost(m_hPos[1]));
-    checkCudaErrors(cudaFreeHost(m_hVel));
+    checkCudaErrors(cudaFree(m_hPos[0]));
+    checkCudaErrors(cudaFree(m_hPos[1]));
+    checkCudaErrors(cudaFree(m_hVel));
 
     for (unsigned int i = 0; i < m_numDevices; i++) {
       cudaEventDestroy(m_deviceData[i].event);
@@ -395,9 +389,8 @@ void BodySystemCUDA<T>::setArray(BodyArray array, const T *data) {
         if (m_bUseSysMem) {
           memcpy(m_hPos[m_currentRead], data, m_numBodies * 4 * sizeof(T));
         } else
-          checkCudaErrors(cudaMemcpy(m_deviceData[0].dPos[m_currentRead], data,
-                                     m_numBodies * 4 * sizeof(T),
-                                     cudaMemcpyHostToDevice));
+          memcpy(m_deviceData[0].dPos[m_currentRead],
+                 data, m_numBodies * 4 * sizeof(T));
       }
     } break;
 
@@ -405,9 +398,8 @@ void BodySystemCUDA<T>::setArray(BodyArray array, const T *data) {
       if (m_bUseSysMem) {
         memcpy(m_hVel, data, m_numBodies * 4 * sizeof(T));
       } else
-        checkCudaErrors(cudaMemcpy(m_deviceData[0].dVel, data,
-                                   m_numBodies * 4 * sizeof(T),
-                                   cudaMemcpyHostToDevice));
+        memcpy(m_deviceData[0].dVel, data,
+               m_numBodies * 4 * sizeof(T));
 
       break;
   }
