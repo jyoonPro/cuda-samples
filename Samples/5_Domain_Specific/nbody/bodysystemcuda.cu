@@ -241,6 +241,7 @@ void integrateNbodySystem(DeviceData<T> *deviceData,
     int numTiles = (numBodies + blockSize - 1) / blockSize;
     int sharedMemSize = blockSize * 4 * sizeof(T);  // 4 floats for pos
 
+    cudaFuncSetAttribute(integrateBodies<T>, cudaFuncAttributeMaxDynamicSharedMemorySize, sharedMemSize * 2);
     integrateBodies<T><<<numBlocks, blockSize, sharedMemSize>>>(
         (typename vec4<T>::Type *)deviceData[dev].dPos[1 - currentRead],
         (typename vec4<T>::Type *)deviceData[dev].dPos[currentRead],

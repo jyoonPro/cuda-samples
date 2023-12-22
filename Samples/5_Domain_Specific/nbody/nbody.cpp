@@ -1153,7 +1153,7 @@ int main(int argc, char **argv) {
   }
 
   if (blockSize == 0)  // blockSize not set on command line
-    blockSize = 256;
+    blockSize = 128;
 
   // default number of bodies is #SMs * 4 * CTA size
   if (useCpu)
